@@ -15,5 +15,9 @@ namespace ProductMicroservice.ProductInterface
 
         Task<int> AddProductAsync(Product product);
 
+        Task<int> UpdateProduct(int id, Product product);
+
+        Task<int> DeleteProduct(int id);
+
     }
 }

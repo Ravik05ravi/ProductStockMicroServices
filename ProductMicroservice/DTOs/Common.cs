@@ -21,7 +21,7 @@ namespace ProductMicroservice.DTOs
 
     public class RequestIncreaseorDecreaseStockquantity
     {
-        public string Productid { get; set; }
+        public int Productid { get; set; }
         public int Quantity { get; set; }
     }
 

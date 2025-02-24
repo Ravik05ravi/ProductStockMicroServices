@@ -35,8 +35,6 @@ namespace ProductMicroservice.Repository
                     UpdatedAt = DateTime.Now
 
                 };
-
-
                 await _dataContextClass.Product.AddAsync(ProductDto);
                 await _dataContextClass.SaveChangesAsync();
                 var result = 1;
@@ -47,25 +45,78 @@ namespace ProductMicroservice.Repository
             {
                 throw ex;
             }
-            //return null;
+           
         }
+
+       
 
         public async Task<ProductDto> GetProduct(int id)
         {
-            // var res = await _dataContextClass.Product.Where(o => o.ProductId == id);
+            var res = await _dataContextClass.Product.Where(o=>o.ProductId==id).Select(p=> new ProductDto 
+            {
+                ProductId=p.ProductId,
+                Name=p.Name,
+                Brand=p.Brand,
+                Catagory=p.Catagory,
+                Description=p.Description,
+                Price=p.Price,
+                CreatedAt=p.CreatedAt,
+                UpdatedAt=p.UpdatedAt
+            
+            }).FirstOrDefaultAsync();
 
-            return null;
+            return res;
         }
-
-        public async Task<List<ProductDto>> GetProductDetails()
-        {
-            return await _dataContextClass.Product.ToListAsync();
-
-        }
-
         public async Task<List<ProductDto>> GetProductDtos()
         {
              return await _dataContextClass.Product.ToListAsync();
+
+        }
+
+        public async Task<int> UpdateProduct(int id, Product updatedProduct)
+        {
+            var product = await _dataContextClass.Product.FindAsync(id);
+
+            if (product != null)
+            {
+                if (!string.IsNullOrEmpty(updatedProduct.Name))
+                    product.Name = updatedProduct.Name;
+                if (!string.IsNullOrEmpty(updatedProduct.Description))
+                    product.Description = updatedProduct.Description;
+                if (updatedProduct.Price > 0)
+                    product.Price = updatedProduct.Price;
+                if (!string.IsNullOrEmpty(updatedProduct.Brand))
+                    product.Brand = updatedProduct.Brand;
+                if (!string.IsNullOrEmpty(updatedProduct.Catagory))
+                    product.Catagory = updatedProduct.Catagory;
+                product.UpdatedAt = DateTime.Now;
+                var res = await _dataContextClass.SaveChangesAsync();
+
+                return res;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        public async Task<int> DeleteProduct(int id)
+        {
+            var product = await _dataContextClass.Product.FindAsync(id);
+
+            if (product != null)
+            {
+
+                _dataContextClass.Product.Remove(product);
+
+                var res=await _dataContextClass.SaveChangesAsync();
+
+                return res;
+            }
+            else
+            {
+                return 0;
+            }
 
         }
     }

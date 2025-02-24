@@ -26,15 +26,16 @@ namespace ProductMicroservice.Controllers
         {
             try
             {
+                //Need to change the Details Add Stock quantity when we are registering the  product to admin
                 if (product == null)
                 {
                     var errObj = new ErrorResponse(ErrorReason.validationFail.ToString(), StatusCodes.Status400BadRequest, "InValid Request Object");
                     return BadRequest(errObj);
                 }
 
-                var response = _productRepository.AddProductAsync(product);
+                var response =await _productRepository.AddProductAsync(product);
 
-                if (response.IsCompleted)
+                if (response>0)
                 {
                     var errObj = new ErrorResponse(ErrorReason.success.ToString(), StatusCodes.Status200OK, " Product Add Successfully");
 
@@ -52,10 +53,10 @@ namespace ProductMicroservice.Controllers
             catch (Exception ex)
             {
                 var errObj = new ErrorResponse(ex.Message.ToString(), StatusCodes.Status500InternalServerError, "Internal Server Error");
-                return BadRequest(errObj);
+                return StatusCode(500,ex.Message.ToString()+" Error: "+errObj);
 
             }
-            return null;
+           
 
         }
 
@@ -64,16 +65,26 @@ namespace ProductMicroservice.Controllers
         {
             try
             {
-             
-                return Ok(await _productRepository.GetProductDtos());
+
+                var response = await _productRepository.GetProductDtos();
+
+                if (response == null)
+                {
+                    var errObj = new ErrorResponse(ErrorReason.noContent.ToString(), StatusCodes.Status404NotFound, " No Product is available ");
+                    return BadRequest(errObj);
+
+                }
+
+                return Ok(response);
 
             }
             catch (Exception ex)
             {
+                var errObj = new ErrorResponse(ex.Message.ToString(), StatusCodes.Status500InternalServerError, "Internal Server Error");
+                return StatusCode(500, ex.Message.ToString() + " Error: " + errObj);
 
             }
-            return null;
-
+           
         }
 
         [HttpGet("GetProductinfo/{id}")]
@@ -81,74 +92,167 @@ namespace ProductMicroservice.Controllers
         {
             try
             {
-                return Ok(await _productRepository.GetProduct(id));
+                if (id <= 0)
+                {
+                    var errObj = new ErrorResponse(ErrorReason.validationFail.ToString(), StatusCodes.Status400BadRequest, " Incorrect Product id");
+                    return BadRequest(errObj);
+
+                }
+                var response = await _productRepository.GetProduct(id);
+
+                if(response==null)
+                {
+                    var errObj = new ErrorResponse(ErrorReason.noContent.ToString(), StatusCodes.Status404NotFound, " No Product is available or Incorrect Product id");
+                    return BadRequest(errObj);
+
+                }
+                return Ok(response);
 
             }
             catch (Exception ex)
             {
+                var errObj = new ErrorResponse(ex.Message.ToString(), StatusCodes.Status500InternalServerError, "Internal Server Error");
+                return StatusCode(500, ex.Message.ToString() + " Error: " + errObj);
 
             }
-            return null;
+           
 
         }
 
         [HttpPut("UpdateProduct/{id}")]
-        public async Task<ActionResult> UpdateProduct(Product product)
+        public async Task<ActionResult> UpdateProduct( [FromBody] int id,Product product)
         {
             try
             {
+                if (id <= 0 && product == null || id <= 0 || product == null)
+                {
+                    var errObj = new ErrorResponse(ErrorReason.validationFail.ToString(), StatusCodes.Status400BadRequest, "InValid Request Object");
+                    return BadRequest(errObj);
+                }
 
+                var res = await _productRepository.UpdateProduct(id,product);
+
+                if(res>0)
+                {
+                    var obj =new ErrorResponse(ErrorReason.success.ToString(), StatusCodes.Status200OK, " Product details updated succssfully");
+                    return StatusCode(200, obj);
+                }
+                else
+                {
+                    var obj = new ErrorResponse(ErrorReason.internalError.ToString(), StatusCodes.Status500InternalServerError, " Product details not updated ");
+                    return StatusCode(500,obj);
+                }
 
             }
             catch (Exception ex)
             {
-
+                var errObj = new ErrorResponse(ex.Message.ToString(), StatusCodes.Status500InternalServerError, "Internal Server Error");
+                return StatusCode(500, ex.Message.ToString() + " Error: " + errObj);
             }
-            return null;
+           
 
         }
 
         [HttpDelete("DeleteProduct/{id}")]
-        public async Task<ActionResult> DeleteProduct()
+        public async Task<ActionResult> DeleteProduct(int id)
         {
             try
             {
+                if (id <= 0)
+                {
+                    var errObj = new ErrorResponse(ErrorReason.validationFail.ToString(), StatusCodes.Status400BadRequest, "InValid Request Object");
+                    return BadRequest(errObj);
+                }
+                var response = await _productRepository.DeleteProduct(id);
 
+                if(response>0)
+                {
+                    var obj = new ErrorResponse(ErrorReason.success.ToString(), StatusCodes.Status204NoContent, " Product details deleted succssfully");
+                    return StatusCode(204, obj);
+                }
+                else
+                {
+                    var obj = new ErrorResponse(ErrorReason.internalError.ToString(), StatusCodes.Status500InternalServerError, " Product id or details not valid ");
+                    return StatusCode(500, obj);
+                }
             }
             catch (Exception ex)
             {
-
+                var errObj = new ErrorResponse(ex.Message.ToString(), StatusCodes.Status500InternalServerError, "Internal Server Error");
+                return StatusCode(500, ex.Message.ToString() + " Error: " + errObj);
             }
-            return null;
-
         }
         [HttpPut("decrement-stock/{id}/{quantity}")]
-        public async Task<ActionResult> DecrementStockQuatity(int Productid, [FromBody] RequestIncreaseorDecreaseStockquantity requestIncreaseorDecreaseStockquantity)
+        public async Task<ActionResult> DecrementStockQuatity(int ProductStockid, [FromBody] RequestIncreaseorDecreaseStockquantity requestIncreaseorDecreaseStockquantity)
         {
             try
             {
+                if (ProductStockid <= 0 && requestIncreaseorDecreaseStockquantity == null || ProductStockid <= 0 || requestIncreaseorDecreaseStockquantity == null)
+                {
+                    var errObj = new ErrorResponse(ErrorReason.validationFail.ToString(), StatusCodes.Status400BadRequest, "InValid Request Object");
+                    return BadRequest(errObj);
+                }
 
+                var res = await _productStock.DecrementProductStockQuatity(ProductStockid, requestIncreaseorDecreaseStockquantity);
+
+                if (res > 0)
+                {
+                    var obj = new ErrorResponse(ErrorReason.success.ToString(), StatusCodes.Status205ResetContent, " Product Stock details updated succssfully");
+                    return StatusCode(200, obj);
+                }
+                else
+                {
+                    var obj = new ErrorResponse(ErrorReason.internalError.ToString(), StatusCodes.Status500InternalServerError, " Product Stock details not updated ");
+                    return StatusCode(500, obj);
+                }
 
             }
             catch (Exception ex)
             {
+                var errObj = new ErrorResponse(ex.Message.ToString(), StatusCodes.Status500InternalServerError, "Internal Server Error");
+                return StatusCode(500, ex.Message.ToString() + " Error: " + errObj);
 
             }
-            return null;
+           
         }
 
         [HttpPut("add-to-stock/{id}/{quantity}")]
-        public async Task<ActionResult> AddStockQuatity(int Productid, [FromBody] RequestIncreaseorDecreaseStockquantity requestIncreaseorDecreaseStockquantity)
+        public async Task<ActionResult> AddStockQuatity(int ProductStockid=0, [FromBody] RequestIncreaseorDecreaseStockquantity requestIncreaseorDecreaseStockquantity)
         {
             try
             {
+                if (ProductStockid <= 0 && requestIncreaseorDecreaseStockquantity == null || ProductStockid <= 0 || requestIncreaseorDecreaseStockquantity == null)
+                {
+                    var errObj = new ErrorResponse(ErrorReason.validationFail.ToString(), StatusCodes.Status400BadRequest, "InValid Request Object");
+                    return BadRequest(errObj);
+
+                }
+
+                var res = await _productStock.AddProductStockQuatity(ProductStockid, requestIncreaseorDecreaseStockquantity);
+
+                if (res > 0)
+                {
+                    var obj = new ErrorResponse(ErrorReason.success.ToString(), StatusCodes.Status200OK, " Product Stock details updated succssfully");
+
+                    return StatusCode(200, obj);
+
+                }
+                else
+                {
+                    var obj = new ErrorResponse(ErrorReason.internalError.ToString(), StatusCodes.Status500InternalServerError, " Product Stock details not updated ");
+                    return StatusCode(500, obj);
+
+                }
+
 
             }
             catch (Exception ex)
             {
+                var errObj = new ErrorResponse(ex.Message.ToString(), StatusCodes.Status500InternalServerError, "Internal Server Error");
+                return StatusCode(500, ex.Message.ToString() + " Error: " + errObj);
 
             }
-            return null;
+           
         }
 
     }
